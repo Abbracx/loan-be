@@ -1,6 +1,3 @@
-# from .base import *
-
-
 from .base import *  # noqa
 from .base import env
 
@@ -19,11 +16,6 @@ CSRF_TRUSTED_ORIGINS = ["http://0.0.0.0:8000", "http://127.0.0.1:8000"]
 
 # EMAIL_BACKEND = "djcelery_email.backends.CeleryEmailBackend"
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-
-# EMAIL_HOST = env("EMAIL_HOST", default="mailhog")  # Use "mailhog" for local development
-# EMAIL_PORT = env("EMAIL_PORT", default="1025")
-# EMAIL_HOST_USER= env("EMAIL_HOST_USER", default="mailtrap_user")  #
-# EMAIL_HOST_PASSWORD= env("EMAIL_HOST_PASSWORD", default="Password123")  # Use a secure password in production
 
 EMAIL_HOST="sandbox.smtp.mailtrap.io"
 EMAIL_HOST_USER="61aa281f95c778"

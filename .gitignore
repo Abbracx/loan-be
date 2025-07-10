@@ -325,6 +325,7 @@ tags
 # Redis dump file
 dump.rdb
 
+
 ### Project template
 media_index/media/
 
@@ -332,6 +333,7 @@ media_index/media/
 .ipython/
 .env
 .envs/*
+logs/*.log
 
 
 

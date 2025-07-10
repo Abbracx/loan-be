@@ -14,19 +14,22 @@ ALLOWED_HOSTS = ["0.0.0.0", "127.0.0.1"]
 
 CSRF_TRUSTED_ORIGINS = ["http://0.0.0.0:8000", "http://127.0.0.1:8000"]
 
-# EMAIL_BACKEND = "djcelery_email.backends.CeleryEmailBackend"
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = "djcelery_email.backends.CeleryEmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-# EMAIL_HOST = env("EMAIL_HOST", default="mailhog")  # Use "mailhog" for local development
-# EMAIL_PORT = env("EMAIL_PORT", default="1025")
-# EMAIL_HOST_USER= env("EMAIL_HOST_USER", default="mailtrap_user")  #
-# EMAIL_HOST_PASSWORD= env("EMAIL_HOST_PASSWORD", default="Password123")  # Use a secure password in production
+EMAIL_HOST = env("EMAIL_HOST", default="mailhog")  # Use "mailhog" for local development
+EMAIL_PORT = env("EMAIL_PORT", default="1025")
+EMAIL_HOST_USER= env("EMAIL_HOST_USER", default="mailtrap_user")  
+EMAIL_HOST_PASSWORD= env("EMAIL_HOST_PASSWORD", default="Password123")  
 
-EMAIL_HOST="sandbox.smtp.mailtrap.io"
-EMAIL_HOST_USER="61aa281f95c778"
-EMAIL_HOST_PASSWORD="a9f956d6416957"
-EMAIL_PORT="2525"
+# EMAIL_HOST="sandbox.smtp.mailtrap.io"
+# EMAIL_HOST_USER="61aa281f95c778"
+# EMAIL_HOST_PASSWORD="a9f956d6416957"
+# EMAIL_PORT="2525"
 
-DEFAULT_FROM_EMAIL = "tankoraphael6@gmail.com"
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL",
+    default="Loan BE <no-reply@localhost>",
+)
 DOMAIN = env("DOMAIN")
 SITE_NAME = "Loan BE"

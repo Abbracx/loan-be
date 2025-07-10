@@ -1,3 +1,6 @@
+import logging
+from django.core.cache import cache
+from django.conf import settings
 from rest_framework import generics, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -10,6 +13,8 @@ from .serializers import LoanApplicationSerializer, AdminLoanApplicationSerializ
 from .permissions import IsOwnerOrAdmin, IsAdminUser
 from .services import FraudDetectionService
 from .paginations import LoanPagination
+
+logger = logging.getLogger(__name__)
 
 
 class LoanApplicationViewSet(ModelViewSet):
@@ -41,8 +46,22 @@ class LoanApplicationViewSet(ModelViewSet):
         
         return [permission() for permission in permission_classes]
 
+    def list(self, request, *args, **kwargs):
+        cache_key = f"loans_list_{request.user.id}_{request.query_params}"
+        cached_response = cache.get(cache_key)
+        
+        if cached_response:
+            logger.info(f"Cache hit for loans list - User: {request.user.id}")
+            return Response(cached_response)
+        
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, timeout=300)
+        logger.info(f"Loans list cached - User: {request.user.id}")
+        return response
+
     def perform_create(self, serializer):
         loan_application = serializer.save()
+        logger.info(f"Loan application created - ID: {loan_application.id}, User: {loan_application.user.id}, Amount: {loan_application.amount_requested}")
         
         # Run fraud detection
         fraud_reasons = FraudDetectionService.check_fraud(
@@ -52,12 +71,18 @@ class LoanApplicationViewSet(ModelViewSet):
         
         if fraud_reasons and len(fraud_reasons) > 0:
             FraudDetectionService.flag_loan(loan_application, fraud_reasons)
+            logger.warning(f"Loan flagged for fraud - ID: {loan_application.id}, Reasons: {fraud_reasons}")
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         loan = self.get_object()
         loan.status = LoanStatus.APPROVED
         loan.save()
+        logger.info(f"Loan approved - ID: {loan.id}, Admin: {request.user.id}")
+        
+        # Clear cache
+        cache.delete_pattern(f"loans_list_{loan.user.id}_*")
+        
         return Response({'status': 'approved'})
 
     @action(detail=True, methods=['post'])
@@ -65,6 +90,11 @@ class LoanApplicationViewSet(ModelViewSet):
         loan = self.get_object()
         loan.status = LoanStatus.REJECTED
         loan.save()
+        logger.info(f"Loan rejected - ID: {loan.id}, Admin: {request.user.id}")
+        
+        # Clear cache
+        cache.delete_pattern(f"loans_list_{loan.user.id}_*")
+        
         return Response({'status': 'rejected'})
 
     @action(detail=True, methods=['post'])
@@ -72,6 +102,11 @@ class LoanApplicationViewSet(ModelViewSet):
         loan = self.get_object()
         reason = request.data.get('reason', 'Manual flag by admin')
         FraudDetectionService.flag_loan(loan, [reason])
+        logger.warning(f"Loan manually flagged - ID: {loan.id}, Admin: {request.user.id}, Reason: {reason}")
+        
+        # Clear cache
+        cache.delete_pattern(f"loans_list_{loan.user.id}_*")
+        
         return Response({'status': 'flagged'})
 
 
@@ -82,3 +117,16 @@ class FlaggedLoansView(generics.ListAPIView):
 
     def get_queryset(self):
         return LoanApplication.objects.filter(status=LoanStatus.FLAGGED).prefetch_related('fraud_flags')
+
+    def list(self, request, *args, **kwargs):
+        cache_key = "flagged_loans_list"
+        cached_response = cache.get(cache_key)
+        
+        if cached_response:
+            logger.info("Cache hit for flagged loans list")
+            return Response(cached_response)
+        
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, timeout=300)
+        logger.info("Flagged loans list cached")
+        return response

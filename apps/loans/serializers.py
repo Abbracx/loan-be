@@ -15,10 +15,10 @@ class LoanApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoanApplication
         fields = [
-            'id', 'amount_requested', 'purpose', 'status', 
+            'pkid','id', 'amount_requested', 'purpose', 'status', 
             'date_applied', 'date_updated', 'fraud_flags', 'user_email'
         ]
-        read_only_fields = ['status', 'date_applied', 'date_updated']
+        read_only_fields = ['pkid', 'status', 'date_applied', 'date_updated']
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
