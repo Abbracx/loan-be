@@ -25,7 +25,7 @@ A Django REST API for managing loan applications with automated fraud detection,
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
+git clone git@github.com:Abbracx/loan-be.git
 cd loan-be
 ```
 
@@ -43,7 +43,7 @@ pip install -r requirements.txt
 4. **Environment setup**
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env.local for local development settings
 ```
 
 5. **Install and start Redis**
@@ -75,6 +75,7 @@ mkdir logs
 8. **Run the application**
 ```bash
 # Terminal 1: Django server
+export DJANGO_SETTINGS_MODULE=loan_be.settings.development
 python manage.py runserver
 
 # Terminal 2: Celery worker
@@ -88,51 +89,168 @@ celery -A loan_be flower
 
 1. **Clone and navigate**
 ```bash
-git clone <repository-url>
+git clone git@github.com:Abbracx/loan-be.git
 cd loan-be
 ```
 
 2. **Environment setup**
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env for Docker settings (use service names like 'redis', 'postgres')
 ```
 
 3. **Build and run**
 ```bash
-docker-compose up --build
+make build
 ```
 
 4. **Create superuser** (in new terminal)
 ```bash
-docker-compose exec web python manage.py createsuperuser
+make superuser
 ```
 
-## Troubleshooting Redis Connection
+5. **Access services**
+- **API**: http://localhost:8080
+- **Admin**: http://localhost:8080/admin
+- **MailHog**: http://localhost:8025 (Email testing)
+- **Flower**: http://localhost:5555 (Celery monitoring)
 
-If you encounter Redis connection errors:
+### Docker Commands (using Makefile)
 
-### Fix for Local Development
-
-**Update loan_be/settings/development.py**:
-```python
-# Fix Redis connection for local development
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://localhost:6379/0",  # Changed from redis:6379
-        "KEY_PREFIX": "loan_be", 
-    }
-}
-
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
-```
-
-**Update .env file**:
 ```bash
-CELERY_BROKER_URL=redis://localhost:6379/0
+# Build and start containers
+make build
+
+# Start containers
+make up
+
+# Stop containers
+make down
+
+# View logs
+make show-logs
+
+# Access web container shell
+make exec
+
+# Run migrations
+make migrate
+
+# Create superuser
+make superuser
+
+# Run tests
+make test
+
+# Code formatting
+make black
+make isort
+
+# Stop and remove volumes
+make down-v
 ```
+
+## Configuration
+
+### Environment Variables
+
+#### For Local Development (.env.local)
+
+```bash
+# Security
+SECRET_KEY='django-insecure-2-ffsi9@x@wm86_baw*n-ipjd%dg8$cuy1$k1g@lh02hpqzxn'
+SIGNING_KEY='ffsi9@x@wm86_baw*n-ipjd%dg8$cuy1$k1g@lh02hpqzxn'
+DEBUG=True
+
+# Domain
+DOMAIN=localhost:8000
+
+# Database (Local - use SQLite by default)
+# DATABASE_URL=sqlite:///db.sqlite3
+
+# Redis (Local)
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+REDIS_URL=redis://localhost:6379/0
+
+# Email (Local - use console backend or SMTP)
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=your-email
+EMAIL_HOST_PASSWORD=your-password
+DEFAULT_FROM_EMAIL=noreply@example.com
+```
+
+#### For Docker Development (.env)
+
+```bash
+# Security
+SECRET_KEY='django-insecure-2-ffsi9@x@wm86_baw*n-ipjd%dg8$cuy1$k1g@lh02hpqzxn'
+SIGNING_KEY='ffsi9@x@wm86_baw*n-ipjd%dg8$cuy1$k1g@lh02hpqzxn'
+DEBUG=True
+
+# Domain
+DOMAIN=0.0.0.0:8000
+
+# Database (Docker)
+POSTGRES_ENGINE=django.db.backends.postgresql
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=Password123
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=loan-be-db
+DATABASE_URL=postgres://postgres:Password123@postgres:5432/loan-be-db
+
+# Redis (Docker)
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/0
+REDIS_URL=redis://redis:6379/0
+
+# Email (Docker - using MailHog)
+EMAIL_HOST=mailhog
+EMAIL_PORT=1025
+EMAIL_HOST_USER=mailtrap_user
+EMAIL_HOST_PASSWORD=Password123
+DEFAULT_FROM_EMAIL=Loan BE <no-reply@localhost>
+```
+
+### Key Differences: Local vs Docker
+
+| Component | Local | Docker |
+|-----------|-------|--------|
+| Redis URL | `redis://localhost:6379/0` | `redis://redis:6379/0` |
+| Database | SQLite or local PostgreSQL | `postgres://postgres:Password123@postgres:5432/loan-be-db` |
+| Email | SMTP or console backend | MailHog (`mailhog:1025`) |
+| Domain | `localhost:8000` | `0.0.0.0:8000` |
+
+### Settings Structure
+
+- `base.py`: Common settings
+- `development.py`: Development overrides
+- `test.py`: Test-specific settings
+- `production.py`: Production configuration (create as needed)
+
+## Troubleshooting
+
+### Redis Connection Issues
+
+**Local Development:**
+- Ensure Redis is running: `redis-cli ping`
+- Use `localhost` in Redis URLs
+
+**Docker Development:**
+- Use service names in Redis URLs: `redis://redis:6379/0`
+- Ensure Redis service is running: `docker-compose ps`
+
+### Database Issues
+
+**Local:**
+- Default uses SQLite (no setup required)
+- For PostgreSQL: Install locally and update DATABASE_URL
+
+**Docker:**
+- Uses PostgreSQL service automatically
+- Check service health: `make show-logs`
 
 ## API Endpoints
 
@@ -165,7 +283,7 @@ CELERY_BROKER_URL=redis://localhost:6379/0
 pytest tests/ --ds=loan_be.settings.test -v
 
 # Docker
-docker-compose exec web pytest tests/ --ds=loan_be.settings.test -v
+make test
 
 # Verbose output
 pytest tests/ --ds=loan_be.settings.test -vv -s
@@ -173,7 +291,11 @@ pytest tests/ --ds=loan_be.settings.test -vv -s
 
 ### Test Coverage
 ```bash
+# Local
 pytest tests/ --cov=apps --cov-report=html
+
+# Docker
+make cov-html
 ```
 
 ## Key Implementation Details
@@ -218,38 +340,6 @@ The system automatically flags loans based on:
 - **Fraud Notifications**: Automatic admin alerts for flagged loans
 - **Retry Logic**: Built-in Celery retry mechanisms
 - **Test Mode**: Synchronous execution in tests
-
-## Configuration
-
-### Environment Variables
-
-```bash
-# Database
-DATABASE_URL=sqlite:///db.sqlite3
-
-# Redis
-CELERY_BROKER_URL=redis://localhost:6379/0
-
-# Email
-EMAIL_HOST=smtp.example.com
-EMAIL_PORT=587
-EMAIL_HOST_USER=your-email
-EMAIL_HOST_PASSWORD=your-password
-DEFAULT_FROM_EMAIL=noreply@example.com
-
-# Security
-SECRET_KEY=your-secret-key
-SIGNING_KEY=your-jwt-signing-key
-DEBUG=True
-DOMAIN=localhost:8000
-```
-
-### Settings Structure
-
-- `base.py`: Common settings
-- `development.py`: Development overrides
-- `test.py`: Test-specific settings
-- `production.py`: Production configuration (create as needed)
 
 ## Assumptions & Design Decisions
 
