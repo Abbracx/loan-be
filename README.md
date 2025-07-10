@@ -110,10 +110,18 @@ make superuser
 ```
 
 5. **Access services**
+   
+##### Local Host
 - **API**: http://localhost:8080
 - **Admin**: http://localhost:8080/admin
 - **MailHog**: http://localhost:8025 (Email testing)
 - **Flower**: http://localhost:5555 (Celery monitoring)
+
+##### Docker Host
+- **API**: http://0.0.0.0:8000
+- **Admin**: http://0.0.0.0:8000/admin
+- **MailHog**: http://0.0.0.0:8025 (Email testing)
+- **Flower**: http://0.0.0.0:5555 (Celery monitoring)
 
 ### Docker Commands (using Makefile)
 
