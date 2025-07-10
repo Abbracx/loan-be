@@ -66,10 +66,13 @@ isort:
 	docker compose -f docker-compose.yml exec web isort . --skip venv --skip migrations
 
 cov:
-	docker compose -f docker-compose.yml exec web pytest -p no:warnings --cov=. -v
+	docker compose -f docker-compose.yml exec web pytest tests/ -p no:warnings --ds=loan_be.settings.test --cov=. -vv
 
 cov-html:
-	docker compose -f docker-compose.yml exec web pytest -p no:warnings --cov=. --cov-report html
+	docker compose -f docker-compose.yml exec web pytest tests/ -p no:warnings --ds=loan_be.settings.test --cov=. --cov-report html
 
 test:
 	docker compose -f docker-compose.yml exec web pytest -p no:warnings -v
+
+test-print-logs:
+	docker compose -f docker-compose.yml exec web pytest tests/ -p no:warnings --ds=loan_be.settings.test -vv -s
