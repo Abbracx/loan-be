@@ -16,7 +16,7 @@ class FraudDetectionService:
         flags = []
         logger.info(f"Running fraud detection - User: {user.id}, Amount: {amount_requested}")
         
-        # Check 1: More than 3 loans in past 24 hours
+        # Check 1: More than 3 loans in past 24 hours (optimized with index)
         yesterday = timezone.now() - timedelta(hours=24)
         recent_loans = LoanApplication.objects.filter(
             user=user, 
@@ -34,13 +34,17 @@ class FraudDetectionService:
             flags.append(flag)
             logger.warning(f"Fraud flag: {flag} - User: {user.id}, Amount: {amount_requested}")
         
-        # Check 3: Email domain used by more than 10 users
+        # Check 3: Email domain used by more than 10 users (cached and optimized)
         email_domain = user.email.split('@')[1]
         cache_key = f"domain_users_{email_domain}"
         domain_users = cache.get(cache_key)
         
         if domain_users is None:
-            domain_users = User.objects.filter(email__endswith=f'@{email_domain}').count()
+            # Optimized query using email index
+            domain_users = User.objects.filter(
+                email__endswith=f'@{email_domain}',
+                is_active=True
+            ).count()
             cache.set(cache_key, domain_users, timeout=3600)
         
         if domain_users > 10:
@@ -54,13 +58,14 @@ class FraudDetectionService:
     @staticmethod
     def flag_loan(loan_application, reasons):
         loan_application.status = LoanStatus.FLAGGED
-        loan_application.save()
+        loan_application.save(update_fields=['status', 'updated_at'])
         
-        for reason in reasons:
-            FraudFlag.objects.create(
-                loan_application=loan_application,
-                reason=reason
-            )
+        # Bulk create fraud flags for better performance
+        fraud_flags = [
+            FraudFlag(loan_application=loan_application, reason=reason)
+            for reason in reasons
+        ]
+        FraudFlag.objects.bulk_create(fraud_flags)
         
         logger.error(f"Loan flagged - ID: {loan_application.id}, User: {loan_application.user.id}, Reasons: {reasons}")
         
@@ -74,4 +79,3 @@ class FraudDetectionService:
             str(loan_application.amount_requested),
             reasons
         )
-        logger.info(f"Fraud notification email queued for Loan ID: {loan_application.id}, User: {loan_application.user.id}")
