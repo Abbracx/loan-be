@@ -17,6 +17,18 @@ from .paginations import LoanPagination
 logger = logging.getLogger(__name__)
 
 
+def safe_cache_delete_pattern(pattern):
+    """Safely delete cache pattern, handling DummyCache"""
+    try:
+        if hasattr(cache, 'delete_pattern'):
+            cache.delete_pattern(pattern)
+        else:
+            # For DummyCache or other backends without delete_pattern
+            pass
+    except AttributeError:
+        pass
+
+
 class LoanApplicationViewSet(ModelViewSet):
     serializer_class = LoanApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -69,7 +81,7 @@ class LoanApplicationViewSet(ModelViewSet):
             loan_application.amount_requested
         )
         
-        if fraud_reasons and len(fraud_reasons) > 0:
+        if fraud_reasons:
             FraudDetectionService.flag_loan(loan_application, fraud_reasons)
             logger.warning(f"Loan flagged for fraud - ID: {loan_application.id}, Reasons: {fraud_reasons}")
 
@@ -80,8 +92,8 @@ class LoanApplicationViewSet(ModelViewSet):
         loan.save()
         logger.info(f"Loan approved - ID: {loan.id}, Admin: {request.user.id}")
         
-        # Clear cache
-        cache.delete_pattern(f"loans_list_{loan.user.id}_*")
+        # Clear cache safely
+        safe_cache_delete_pattern(f"loans_list_{loan.user.id}_*")
         
         return Response({'status': 'approved'})
 
@@ -92,8 +104,8 @@ class LoanApplicationViewSet(ModelViewSet):
         loan.save()
         logger.info(f"Loan rejected - ID: {loan.id}, Admin: {request.user.id}")
         
-        # Clear cache
-        cache.delete_pattern(f"loans_list_{loan.user.id}_*")
+        # Clear cache safely
+        safe_cache_delete_pattern(f"loans_list_{loan.user.id}_*")
         
         return Response({'status': 'rejected'})
 
@@ -104,8 +116,8 @@ class LoanApplicationViewSet(ModelViewSet):
         FraudDetectionService.flag_loan(loan, [reason])
         logger.warning(f"Loan manually flagged - ID: {loan.id}, Admin: {request.user.id}, Reason: {reason}")
         
-        # Clear cache
-        cache.delete_pattern(f"loans_list_{loan.user.id}_*")
+        # Clear cache safely
+        safe_cache_delete_pattern(f"loans_list_{loan.user.id}_*")
         
         return Response({'status': 'flagged'})
 

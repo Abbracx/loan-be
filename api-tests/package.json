@@ -3,9 +3,14 @@
   "version": "1.0.0",
   "description": "API tests for Loan BE",
   "scripts": {
-    "test:api:docker": "newman run api-tests/collections/Loan_Management_App.postman_collection.json -e api-tests/environments/docker.postman_environment.json --reporters cli,html --reporter-html-export api-tests/newman-reports/docker-report.html",
+    "test:api:docker": "newman run ./collections/Loan_Management_App.postman_collection.json -e ./environments/docker.postman_environment.json --reporters cli,html --reporter-html-export ./newman-reports/docker-report.html",
     "test:api:dev": "newman run api-tests/collections/Loan_Management_App.postman_collection.json -e api-tests/environments/development.postman_environment.json --reporters cli,html --reporter-html-export api-tests/newman-reports/docker-report.html",
-    "test:api:ci": "newman run api-tests/collections/Loan_Management_App.postman_collection.json -e api-tests/environments/docker.postman_environment.json --reporters cli,junit --reporter-junit-export api-tests/newman-reports/junit-report.xml"
+    "test:api:ci": "newman run api-tests/collections/Loan_Management_App.postman_collection.json -e api-tests/environments/docker.postman_environment.json --reporters cli,junit --reporter-junit-export api-tests/newman-reports/junit-report.xml",
+    "test:integration": "newman run collections/loan-be-integration.postman_collection.json -e environments/ci.postman_environment.json --reporters cli,html,junit --reporter-html-export newman-reports/integration-report.html --reporter-junit-export newman-reports/integration-junit.xml",
+    "test:smoke": "newman run collections/loan-be-integration.postman_collection.json -e environments/ci.postman_environment.json --folder 'Setup' --reporters cli",
+    "test:auth": "newman run collections/loan-be-integration.postman_collection.json -e environments/ci.postman_environment.json --folder 'User Registration & Authentication Flow' --reporters cli",
+    "test:loans": "newman run collections/loan-be-integration.postman_collection.json -e environments/ci.postman_environment.json --folder 'Loan Application Flow' --reporters cli",
+    "test:security": "newman run collections/loan-be-integration.postman_collection.json -e environments/ci.postman_environment.json --folder 'Security & Permission Tests' --reporters cli"
   },
   "devDependencies": {
     "newman": "^6.0.0",

@@ -78,23 +78,6 @@ test:
 test-print-logs:
 	docker compose -f docker-compose.yml exec web pytest tests/ -p no:warnings --ds=loan_be.settings.test -vv -s
 
-# API Tests 
-install-newman:
-	@echo "Installing Newman and dependencies..."
-	yarn install
-
-test-api-local:
-	@echo "Running API tests against local environment..."
-	yarn test:api:local
-
-test-api-docker:
-	@echo "Running API tests against Docker environment..."
-	yarn test:api:docker
-
-test-api-ci:
-	@echo "Running API tests for CI..."
-	yarn test:api:ci
-
 # Local CI/CD Simulation
 ci-local:
 	@echo "Running local CI/CD simulation..."
@@ -104,14 +87,47 @@ ci-test:
 	@echo "Running tests only..."
 	python -m pytest tests/ --ds=loan_be.settings.test -v --cov=apps
 
+# API Tests 
+install-newman:
+	@echo "Installing Newman and dependencies..."
+	cd api-tests && yarn install
+
+test-api-docker:
+	@echo "Running API tests against Docker environment..."
+	cd api-tests && yarn test:api:docker
+
+test-api-ci:
+	@echo "Running API tests for CI..."
+	cd api-tests && yarn test:api:ci
+
 ci-api-test:
 	@echo "Running API tests..."
-	npm install
-	npm run test:api:docker
+	cd api-tests && yarn install
+	cd api-tests && yarn test:api:docker
+
+test-integration:
+	@echo "Running integration tests..."
+	cd api-tests && yarn test:integration
+
+test-smoke:
+	@echo "Running smoke tests..."
+	cd api-tests && yarn test:smoke
+
+test-auth-flow:
+	@echo "Running authentication flow tests..."
+	cd api-tests && yarn test:auth
+
+test-loan-flow:
+	@echo "Running loan application flow tests..."
+	cd api-tests && yarn test:loans
+
+test-security:
+	@echo "Running security tests..."
+	cd api-tests && yarn test:security
 
 superuser-auto:
 	@echo "Creating superuser automatically..."
-	docker-compose exec -T web python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(email='admin@example.com').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'adminpass123')"
+	docker compose -f docker-compose.yml exec -T web python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(email='admin@example.com').exists() or User.objects.create_superuser(username='admin', email='admin@example.com', password='adminpass123', first_name='Admin', last_name='User')"
 
 # Run Act (GitHub Actions locally)
 act-test:
@@ -121,4 +137,3 @@ act-test:
 act-full:
 	@echo "Running full GitHub Actions workflow locally..."
 	act
-

@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Integration Tests Pipeline
 
 on:
   push:
@@ -7,92 +7,28 @@ on:
     branches: [ main ]
 
 env:
-  PYTHON_VERSION: '3.12'
   NODE_VERSION: '18'
 
 jobs:
-  test:
+  integration-tests:
     runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: Password123
-          POSTGRES_DB: loan-be-db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-    
-    - name: Cache Python dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-    
-    - name: Cache Yarn dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/yarn
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-    
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Install Newman
-      run: yarn install
-    
-    - name: Create logs directory
-      run: mkdir -p logs
-    
-    - name: Run Django tests
-      env:
-        DATABASE_URL: postgres://postgres:Password123@postgres:5432/loan-be-db
-        CELERY_BROKER_URL: redis://redis:6379/0
-        SECRET_KEY: django-insecure-ci-test-key
-        SIGNING_KEY: ci-test-signing-key
-      run: |
-        python manage.py collectstatic --noinput
-        pytest tests/ --ds=loan_be.settings.test -v --cov=apps --cov-report=xml
-
-  api-tests:
-    runs-on: ubuntu-latest
-    needs: test
     
     steps:
     - uses: actions/checkout@v4
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: Cache Yarn dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/yarn
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
     
     - name: Build and start services
       run: |
@@ -101,27 +37,27 @@ jobs:
         
     - name: Wait for services
       run: |
-        timeout 300 bash -c 'until curl -f http://0.0.0.0:8000/api/v1/auth/redoc/; do sleep 5; done'
+        for i in {1..24}; do
+          if curl -f http://localhost:8080/api/v1/auth/redoc/ 2>/dev/null; then
+            echo "Services are ready!"
+            break
+          fi
+          echo "Waiting... ($i/24)"
+          sleep 5
+        done
     
     - name: Create superuser
       run: make superuser-auto
-      env:
-        DJANGO_SUPERUSER_PASSWORD: adminpass123
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
     
     - name: Install Newman
-      run: yarn install
+      run: cd api-tests && yarn install
     
-    - name: Run API tests
-      run: yarn test:api:ci
+    - name: Run Integration Tests
+      run: cd api-tests && yarn test:integration
     
-    - name: Upload API test results
+    - name: Upload test results
       uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: api-test-results
+        name: integration-test-results
         path: api-tests/newman-reports/

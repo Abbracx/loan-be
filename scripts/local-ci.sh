@@ -18,16 +18,23 @@ make build
 
 # Step 4: Wait for services
 echo "⏳ Waiting for services to be ready..."
-timeout 120 bash -c 'until curl -f http://0.0.0.0:8000/api/v1/auth/redoc/ 2>/dev/null; do echo "Waiting..."; sleep 5; done'
+for i in {1..24}; do
+    if curl -f http://localhost:8080/api/v1/auth/redoc/ 2>/dev/null; then
+        echo "Services are ready!"
+        break
+    fi
+    echo "Waiting... ($i/24)"
+    sleep 5
+done
 
 # Step 5: Create test data
 echo "👤 Creating superuser..."
 make superuser-auto
 
-# Step 6: Run API tests
-echo "🔍 Running API tests..."
-yarn install
-yarn test:api:docker
+# Step 5: Run Integration tests
+echo "🔍 Running Integration tests..."
+cd api-tests && yarn install
+yarn test:integration
 
 if [ $? -ne 0 ]; then
     echo "❌ API tests failed!"
@@ -37,5 +44,6 @@ echo "✅ API tests passed!"
 
 # Step 7: Generate reports
 echo "📊 Generating reports..."
+echo "📊 Integration test simulation completed!"
 echo "✅ Local CI/CD simulation completed!"
 echo "📁 Reports available in: api-tests/newman-reports/"

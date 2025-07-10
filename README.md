@@ -42,7 +42,7 @@ pip install -r requirements.txt
 
 4. **Environment setup**
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 # Edit .env.local for local development settings
 ```
 
@@ -298,6 +298,172 @@ pytest tests/ --cov=apps --cov-report=html
 make cov-html
 ```
 
+## Integration Testing
+
+### Postman Collections
+
+Integration testing is handled through comprehensive Postman collections with Newman:
+
+- **Collections**: `api-tests/collections/`
+- **Environments**: `api-tests/environments/`
+- **Reports**: `api-tests/newman-reports/`
+
+### Test Scenarios
+
+#### Authentication Flow Tests
+- User registration with validation
+- Login with token generation
+- Admin login with elevated permissions
+- Token refresh functionality
+
+#### Loan Application Tests
+- Normal loan creation
+- High-amount loan triggering fraud detection
+- Multiple loan submissions for fraud testing
+- Loan status transitions
+
+#### Admin Operations Tests
+- Loan approval/rejection
+- Flagged loan management
+- Admin-only endpoint access
+
+#### Security & Permission Tests
+- Unauthorized access attempts
+- Role-based permission enforcement
+- Token validation
+
+### Setup and Usage
+
+#### Install Newman
+```bash
+cd api-tests && yarn install
+# or
+make install-newman
+```
+
+#### Run Integration Tests
+```bash
+# Full integration test suite
+make test-integration
+
+# Specific test categories
+make test-smoke          # Health checks
+make test-auth-flow      # Authentication tests
+make test-loan-flow      # Loan application tests
+make test-security       # Security & permissions
+```
+
+## CI/CD Pipeline
+
+### GitHub Actions Workflow
+
+The project uses GitHub Actions for continuous integration focused on integration testing:
+
+**Workflow File**: `.github/workflows/integration.yml`
+
+#### Pipeline Focus: Integration Testing Only
+
+**Single Stage: Integration Tests**
+- ✅ Docker environment setup
+- ✅ Service health monitoring
+- ✅ Test data creation
+- ✅ Comprehensive integration tests
+- ✅ Test report generation
+
+#### Workflow Triggers
+- **Push** to `main` or `develop` branches
+- **Pull Requests** to `main` branch
+
+#### Pipeline Steps
+
+```yaml
+# Integration Testing Pipeline
+1. Checkout code
+2. Setup Node.js 18
+3. Build Docker services
+4. Wait for service health
+5. Create test superuser
+6. Run integration test suite
+7. Upload test artifacts
+```
+
+### Local CI/CD Simulation
+
+#### Integration Test Simulation
+```bash
+make ci-integration
+```
+
+**Steps Executed:**
+1. 📋 Environment setup
+2. 🐳 Docker services build
+3. ⏳ Service health checks
+4. 👤 Test data creation
+5. 🔍 Integration tests execution
+6. 📊 Report generation
+
+#### Full CI/CD Simulation
+```bash
+./scripts/integration-ci-simulation.sh
+```
+
+**Complete Integration Pipeline:**
+1. 📋 Environment setup
+2. 🐳 Docker services build & start
+3. ⏳ Service health monitoring
+4. 👤 Test data creation
+5. 🔍 Authentication flow tests
+6. 🔍 Loan application tests
+7. 🔍 Admin operations tests
+8. 🔍 Security & permission tests
+9. 📊 Report generation & cleanup
+
+#### Integration Testing Commands
+
+```bash
+# Install Newman dependencies
+make install-newman
+
+# Run integration test suites
+make test-integration       # Full integration suite
+make test-smoke            # Health checks only
+make test-auth-flow        # Authentication tests
+make test-loan-flow        # Loan application tests
+make test-security         # Security tests
+
+# CI/CD simulation
+make ci-integration        # Integration-focused simulation
+./scripts/integration-ci-simulation.sh  # Full pipeline
+
+# Service management
+make build                 # Build & start services
+make down-v               # Stop & cleanup
+make show-logs            # View service logs
+```
+
+### Integration Testing Features
+
+- **End-to-End Validation**: Complete user journeys
+- **Business Logic Testing**: Fraud detection workflows
+- **Security Validation**: Permission and authentication checks
+- **Service Integration**: Database, Redis, and email services
+- **Automated Reporting**: HTML & JUnit test reports
+- **Error Handling**: Proper cleanup and error reporting
+- **Cross-Platform**: Works on macOS, Linux, and CI environments
+
+### Monitoring & Reports
+
+**Test Reports Location:**
+- Integration Test Reports: `api-tests/newman-reports/`
+- CI Logs: Console output with timestamps
+
+**Service Access During Testing:**
+- API: http://localhost:8080
+- Admin: http://localhost:8080/admin
+- Documentation: http://localhost:8080/api/v1/auth/redoc/
+- MailHog: http://localhost:8025
+- Flower: http://localhost:5555
+
 ## Key Implementation Details
 
 ### Models
@@ -434,49 +600,4 @@ DEBUG=False
 ALLOWED_HOSTS=your-domain.com
 ```
 
-## API Testing
-
-### Postman Collections
-
-API testing is handled through Postman collections with Newman:
-
-- **Collections**: `api-tests/collections/`
-- **Environments**: `api-tests/environments/`
-- **Reports**: `api-tests/newman-reports/`
-
-### Setup and Usage
-
-#### Install Newman
-```bash
-yarn install
-# or
-make install-newman
-```
-
-### Run Api Test
-
-```bash
-# Local environment
-yarn test:api:local
-make test-api-local
-
-# Docker environment  
-yarn test:api:docker
-make test-api-docker
-
-# CI environment
-yarn test:api:ci
-make test-api-ci
-```
-
-### Loscal CI/CD Simulation
-
-```bash
-# Quick simulation
-make ci-local
-
-# Full simulation
-./scripts/full-ci-simulation.sh
-```
-
-This documentation provides a complete guide for setting up, running, and understanding the loan management system with all its features and assumptions clearly outlined.
+This documentation provides a complete guide for setting up, running, and understanding the loan management system with comprehensive integration testing and CI/CD pipeline focused on end-to-end validation.

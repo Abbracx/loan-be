@@ -53,7 +53,14 @@ make build
 
 # Step 5: Wait for services
 log "⏳ Waiting for services..."
-timeout 180 bash -c 'until curl -f http://0.0.0.0:8000/api/v1/auth/redoc/ 2>/dev/null; do sleep 5; done' || error "Services failed"
+for i in {1..36}; do
+    if curl -f http://localhost:8080/api/v1/auth/redoc/ 2>/dev/null; then
+        echo "Services are ready!"
+        break
+    fi
+    echo "Waiting... ($i/36)"
+    sleep 5
+done
 
 # Create superuser
 log "👤 Creating superuser..."
@@ -61,12 +68,12 @@ make superuser-auto || error "Failed to create superuser"
 
 # API tests
 log "🔍 Running API tests..."
-yarn install || error "Failed to install Newman"
-yarn test:api:docker || error "API tests failed"
+cd api-tests && yarn install || error "Failed to install Newman"
+cd api-tests && yarn test:api:docker || error "API tests failed"
 success "API tests passed"
 
 success "🎉 Full CI/CD simulation completed!"
 log "📁 Reports: api-tests/newman-reports/"
-log "🌐 API: http://0.0.0.0:8000"
-log "🌐 Admin: http://0.0.0.0:8000/admin"
-log "📖 Documentation: http://http://0.0.0.0:8000/api/v1/auth/redoc/"
+log "🌐 API: http://localhost:8080"
+log "🌐 Admin: http://localhost:8080/admin"
+log "📖 Documentation: http://localhost:8080/api/v1/auth/redoc/"

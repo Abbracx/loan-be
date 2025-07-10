@@ -1,0 +1,422 @@
+{
+    "info": {
+      "name": "Loan Management Integration Tests",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "event": [
+      {
+        "listen": "prerequest",
+        "script": {
+          "exec": [
+            "// Global setup",
+            "pm.globals.set('timestamp', Date.now());"
+          ]
+        }
+      }
+    ],
+    "item": [
+      {
+        "name": "Setup",
+        "item": [
+          {
+            "name": "Health Check",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('API is healthy', function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test('Response time is acceptable', function () {",
+                    "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                    "});"
+                  ]
+                }
+              }
+            ],
+            "request": {
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "{{base_url}}/api/v1/auth/redoc/",
+                "host": ["{{base_url}}"],
+                "path": ["api", "v1", "auth", "redoc", ""]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "User Registration & Authentication Flow",
+        "item": [
+          {
+            "name": "Register New User",
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "exec": [
+                    "const timestamp = pm.globals.get('timestamp');",
+                    "pm.environment.set('test_email', `test${timestamp}@example.com`);",
+                    "pm.environment.set('test_username', `testuser${timestamp}`);"
+                  ]
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('User registration successful', function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});",
+                    "",
+                    "pm.test('Response contains user data', function () {",
+                    "    const response = pm.response.json();",
+                    "    pm.expect(response).to.have.property('email');",
+                    "    pm.expect(response).to.have.property('username');",
+                    "    pm.environment.set('user_id', response.id);",
+                    "});"
+                  ]
+                }
+              }
+            ],
+            "request": {
+              "method": "POST",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"username\": \"{{test_username}}\",\n    \"first_name\": \"Test\",\n    \"last_name\": \"User\",\n    \"email\": \"{{test_email}}\",\n    \"password\": \"TestPass123!\",\n    \"re_password\": \"TestPass123!\"\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/api/v1/auth/users/",
+                "host": ["{{base_url}}"],
+                "path": ["api", "v1", "auth", "users", ""]
+              }
+            }
+          },
+          {
+            "name": "Login User",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('Login successful', function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test('Access token received', function () {",
+                    "    const response = pm.response.json();",
+                    "    pm.expect(response).to.have.property('access');",
+                    "    pm.environment.set('access_token', response.access);",
+                    "    pm.environment.set('refresh_token', response.refresh);",
+                    "});"
+                  ]
+                }
+              }
+            ],
+            "request": {
+              "method": "POST",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"TestPass123!\"\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/api/v1/auth/jwt/create/",
+                "host": ["{{base_url}}"],
+                "path": ["api", "v1", "auth", "jwt", "create", ""]
+              }
+            }
+          },
+          {
+            "name": "Login Admin",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('Admin login successful', function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test('Admin access token received', function () {",
+                    "    const response = pm.response.json();",
+                    "    pm.expect(response).to.have.property('access');",
+                    "    pm.environment.set('admin_access_token', response.access);",
+                    "});"
+                  ]
+                }
+              }
+            ],
+            "request": {
+              "method": "POST",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"adminpass123\"\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/api/v1/auth/jwt/create/",
+                "host": ["{{base_url}}"],
+                "path": ["api", "v1", "auth", "jwt", "create", ""]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Loan Application Flow",
+        "item": [
+          {
+            "name": "Create Normal Loan",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('Loan created successfully', function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});",
+                    "",
+                    "pm.test('Loan has correct structure', function () {",
+                    "    const response = pm.response.json();",
+                    "    pm.expect(response).to.have.property('id');",
+                    "    pm.expect(response).to.have.property('amount_requested');",
+                    "    pm.expect(response).to.have.property('status');",
+                    "    pm.expect(response.status).to.equal('pending');",
+                    "    pm.environment.set('loan_id', response.id);",
+                    "});"
+                  ]
+                }
+              }
+            ],
+            "request": {
+              "auth": {
+                "type": "bearer",
+                "bearer": [{"key": "token", "value": "{{access_token}}"}]
+              },
+              "method": "POST",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"amount_requested\": 1000000,\n  \"purpose\": \"Business expansion\"\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/api/v1/loans/applications/",
+                "host": ["{{base_url}}"],
+                "path": ["api", "v1", "loans", "applications", ""]
+              }
+            }
+          },
+          {
+            "name": "Create High Amount Loan (Fraud Detection)",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('High amount loan created', function () {",
+                    "    pm.response.to.have.status(201);",
+                    "});",
+                    "",
+                    "pm.test('Loan is flagged for high amount', function () {",
+                    "    const response = pm.response.json();",
+                    "    pm.expect(response.status).to.equal('flagged');",
+                    "    pm.expect(response.fraud_flags).to.be.an('array');",
+                    "    pm.expect(response.fraud_flags.length).to.be.greaterThan(0);",
+                    "    pm.environment.set('flagged_loan_id', response.id);",
+                    "});"
+                  ]
+                }
+              }
+            ],
+            "request": {
+              "auth": {
+                "type": "bearer",
+                "bearer": [{"key": "token", "value": "{{access_token}}"}]
+              },
+              "method": "POST",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"amount_requested\": 6000000,\n  \"purpose\": \"High amount loan for fraud detection test\"\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/api/v1/loans/applications/",
+                "host": ["{{base_url}}"],
+                "path": ["api", "v1", "loans", "applications", ""]
+              }
+            }
+          },
+          {
+            "name": "Get User Loans",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('User loans retrieved', function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test('Response contains loan list', function () {",
+                    "    const response = pm.response.json();",
+                    "    pm.expect(response).to.have.property('results');",
+                    "    pm.expect(response.results).to.be.an('array');",
+                    "    pm.expect(response.results.length).to.be.greaterThan(0);",
+                    "});"
+                  ]
+                }
+              }
+            ],
+            "request": {
+              "auth": {
+                "type": "bearer",
+                "bearer": [{"key": "token", "value": "{{access_token}}"}]
+              },
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "{{base_url}}/api/v1/loans/applications/",
+                "host": ["{{base_url}}"],
+                "path": ["api", "v1", "loans", "applications", ""]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Admin Operations",
+        "item": [
+          {
+            "name": "Admin Approve Loan",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('Loan approved successfully', function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test('Response confirms approval', function () {",
+                    "    const response = pm.response.json();",
+                    "    pm.expect(response.status).to.equal('approved');",
+                    "});"
+                  ]
+                }
+              }
+            ],
+            "request": {
+              "auth": {
+                "type": "bearer",
+                "bearer": [{"key": "token", "value": "{{admin_access_token}}"}]
+              },
+              "method": "POST",
+              "header": [],
+              "url": {
+                "raw": "{{base_url}}/api/v1/loans/applications/{{loan_id}}/approve/",
+                "host": ["{{base_url}}"],
+                "path": ["api", "v1", "loans", "applications", "{{loan_id}}", "approve", ""]
+              }
+            }
+          },
+          {
+            "name": "List Flagged Loans",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('Flagged loans retrieved', function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test('Contains flagged loans', function () {",
+                    "    const response = pm.response.json();",
+                    "    pm.expect(response).to.have.property('results');",
+                    "    pm.expect(response.results).to.be.an('array');",
+                    "});"
+                  ]
+                }
+              }
+            ],
+            "request": {
+              "auth": {
+                "type": "bearer",
+                "bearer": [{"key": "token", "value": "{{admin_access_token}}"}]
+              },
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "{{base_url}}/api/v1/loans/flagged/",
+                "host": ["{{base_url}}"],
+                "path": ["api", "v1", "loans", "flagged", ""]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Security & Permission Tests",
+        "item": [
+          {
+            "name": "User Cannot Approve Loan",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('User cannot approve loan', function () {",
+                    "    pm.response.to.have.status(403);",
+                    "});"
+                  ]
+                }
+              }
+            ],
+            "request": {
+              "auth": {
+                "type": "bearer",
+                "bearer": [{"key": "token", "value": "{{access_token}}"}]
+              },
+              "method": "POST",
+              "header": [],
+              "url": {
+                "raw": "{{base_url}}/api/v1/loans/applications/{{loan_id}}/approve/",
+                "host": ["{{base_url}}"],
+                "path": ["api", "v1", "loans", "applications", "{{loan_id}}", "approve", ""]
+              }
+            }
+          },
+          {
+            "name": "Unauthorized Access Test",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test('Unauthorized access denied', function () {",
+                    "    pm.response.to.have.status(401);",
+                    "});"
+                  ]
+                }
+              }
+            ],
+            "request": {
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "{{base_url}}/api/v1/loans/applications/",
+                "host": ["{{base_url}}"],
+                "path": ["api", "v1", "loans", "applications", ""]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+  

@@ -2,7 +2,6 @@ import logging
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.conf import settings
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import status
@@ -25,8 +24,17 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         serializer = self.get_serializer(data=request.data)
         
         try:
+            email = request.data.get("email")
+            if not email:
+                return Response({"error": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                logger.warning(f"Login attempt with non-existent email: {email}")
+                return Response({"error": "No active account found with the given credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+            
             if serializer.is_valid():
-                user = get_object_or_404(User, email=request.data.get("email"))
                 if user.is_locked:
                     logger.warning(f"Login attempt on locked account - User: {user.id}")
                     return Response(
@@ -39,17 +47,16 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 logger.info(f"Successful login - User: {user.id}")
                 return Response(serializer.validated_data, status=status.HTTP_200_OK)
             else:
-                user = get_object_or_404(User, email=request.data.get("email"))
                 user.failed_login_attempts += 1
                 if user.failed_login_attempts >= 3:
                     user.is_locked = True
                     logger.warning(f"Account locked due to failed attempts - User: {user.id}")
                 user.save()
                 logger.warning(f"Failed login attempt - User: {user.id}, Attempts: {user.failed_login_attempts}")
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "No active account found with the given credentials"}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             logger.error(f"Login error: {str(e)}")
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": "Authentication failed"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CustomTokenRefreshView(TokenRefreshView):
