@@ -434,4 +434,49 @@ DEBUG=False
 ALLOWED_HOSTS=your-domain.com
 ```
 
+## API Testing
+
+### Postman Collections
+
+API testing is handled through Postman collections with Newman:
+
+- **Collections**: `api-tests/collections/`
+- **Environments**: `api-tests/environments/`
+- **Reports**: `api-tests/newman-reports/`
+
+### Setup and Usage
+
+#### Install Newman
+```bash
+yarn install
+# or
+make install-newman
+```
+
+### Run Api Test
+
+```bash
+# Local environment
+yarn test:api:local
+make test-api-local
+
+# Docker environment  
+yarn test:api:docker
+make test-api-docker
+
+# CI environment
+yarn test:api:ci
+make test-api-ci
+```
+
+### Loscal CI/CD Simulation
+
+```bash
+# Quick simulation
+make ci-local
+
+# Full simulation
+./scripts/full-ci-simulation.sh
+```
+
 This documentation provides a complete guide for setting up, running, and understanding the loan management system with all its features and assumptions clearly outlined.

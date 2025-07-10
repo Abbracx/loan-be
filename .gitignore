@@ -343,3 +343,15 @@ subscriptions/__pycache__/
 docker/local/django/rqworker/*
 db.sqlite3
 .qodo
+
+# API Testing
+api-tests/newman-reports/*.html
+api-tests/newman-reports/*.xml
+node_modules/
+yarn.lock
+.yarn/
+
+# Coverage
+coverage.xml
+htmlcov/
+.coverage

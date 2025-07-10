@@ -65,6 +65,7 @@ isort-diff:
 isort:
 	docker compose -f docker-compose.yml exec web isort . --skip venv --skip migrations
 
+# Run tests with coverage
 cov:
 	docker compose -f docker-compose.yml exec web pytest tests/ -p no:warnings --ds=loan_be.settings.test --cov=. -vv
 
@@ -76,3 +77,48 @@ test:
 
 test-print-logs:
 	docker compose -f docker-compose.yml exec web pytest tests/ -p no:warnings --ds=loan_be.settings.test -vv -s
+
+# API Tests 
+install-newman:
+	@echo "Installing Newman and dependencies..."
+	yarn install
+
+test-api-local:
+	@echo "Running API tests against local environment..."
+	yarn test:api:local
+
+test-api-docker:
+	@echo "Running API tests against Docker environment..."
+	yarn test:api:docker
+
+test-api-ci:
+	@echo "Running API tests for CI..."
+	yarn test:api:ci
+
+# Local CI/CD Simulation
+ci-local:
+	@echo "Running local CI/CD simulation..."
+	./scripts/local-ci.sh
+
+ci-test:
+	@echo "Running tests only..."
+	python -m pytest tests/ --ds=loan_be.settings.test -v --cov=apps
+
+ci-api-test:
+	@echo "Running API tests..."
+	npm install
+	npm run test:api:docker
+
+superuser-auto:
+	@echo "Creating superuser automatically..."
+	docker-compose exec -T web python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(email='admin@example.com').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'adminpass123')"
+
+# Run Act (GitHub Actions locally)
+act-test:
+	@echo "Running GitHub Actions locally with Act..."
+	act -j test
+
+act-full:
+	@echo "Running full GitHub Actions workflow locally..."
+	act
+

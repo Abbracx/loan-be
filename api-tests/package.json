@@ -1,0 +1,17 @@
+{
+  "name": "loan-be-api-tests",
+  "version": "1.0.0",
+  "description": "API tests for Loan BE",
+  "scripts": {
+    "test:api:docker": "newman run api-tests/collections/Loan_Management_App.postman_collection.json -e api-tests/environments/docker.postman_environment.json --reporters cli,html --reporter-html-export api-tests/newman-reports/docker-report.html",
+    "test:api:dev": "newman run api-tests/collections/Loan_Management_App.postman_collection.json -e api-tests/environments/development.postman_environment.json --reporters cli,html --reporter-html-export api-tests/newman-reports/docker-report.html",
+    "test:api:ci": "newman run api-tests/collections/Loan_Management_App.postman_collection.json -e api-tests/environments/docker.postman_environment.json --reporters cli,junit --reporter-junit-export api-tests/newman-reports/junit-report.xml"
+  },
+  "devDependencies": {
+    "newman": "^6.0.0",
+    "newman-reporter-html": "^1.0.5"
+  },
+  "author": "Raphael Tanko",
+  "license": "MIT",
+  "private": false
+}

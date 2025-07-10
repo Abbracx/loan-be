@@ -76,8 +76,8 @@ jobs:
     
     - name: Run Django tests
       env:
-        DATABASE_URL: postgres://postgres:Password123@localhost:5432/loan-be-db
-        CELERY_BROKER_URL: redis://localhost:6379/0
+        DATABASE_URL: postgres://postgres:Password123@postgres:5432/loan-be-db
+        CELERY_BROKER_URL: redis://redis:6379/0
         SECRET_KEY: django-insecure-ci-test-key
         SIGNING_KEY: ci-test-signing-key
       run: |
@@ -101,7 +101,7 @@ jobs:
         
     - name: Wait for services
       run: |
-        timeout 300 bash -c 'until curl -f http://localhost:8080/api/v1/auth/redoc/; do sleep 5; done'
+        timeout 300 bash -c 'until curl -f http://0.0.0.0:8000/api/v1/auth/redoc/; do sleep 5; done'
     
     - name: Create superuser
       run: make superuser-auto
