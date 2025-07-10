@@ -1,6 +1,10 @@
 import pytest
+import os
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
+
+# Set test settings
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'loan_be.settings.test')
 
 User = get_user_model()
 

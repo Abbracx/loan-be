@@ -21,7 +21,6 @@ class LoanApplicationViewSet(ModelViewSet):
     ordering_fields = ['date_applied', 'amount_requested']
     ordering = ['-date_applied']
 
-
     def get_queryset(self):
         if self.request.user.is_staff:
             return LoanApplication.objects.all().prefetch_related('fraud_flags')
@@ -33,7 +32,7 @@ class LoanApplicationViewSet(ModelViewSet):
         return LoanApplicationSerializer
 
     def get_permissions(self):
-        if self.action in ['update', 'partial_update', 'destroy']:
+        if self.action in ['update', 'partial_update', 'destroy', 'approve', 'reject', 'flag']:
             permission_classes = [IsAdminUser]
         elif self.action in ['retrieve']:
             permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
@@ -54,21 +53,21 @@ class LoanApplicationViewSet(ModelViewSet):
         if fraud_reasons and len(fraud_reasons) > 0:
             FraudDetectionService.flag_loan(loan_application, fraud_reasons)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         loan = self.get_object()
         loan.status = LoanStatus.APPROVED
         loan.save()
         return Response({'status': 'approved'})
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         loan = self.get_object()
         loan.status = LoanStatus.REJECTED
         loan.save()
         return Response({'status': 'rejected'})
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['post'])
     def flag(self, request, pk=None):
         loan = self.get_object()
         reason = request.data.get('reason', 'Manual flag by admin')

@@ -42,7 +42,7 @@ class TestLoanApplication:
         loan = LoanApplicationFactory()
         api_client.force_authenticate(user=admin_user)
         
-        url = reverse('loans:loan-applications-approve', kwargs={'pk': loan.id})
+        url = reverse('loans:loan-applications-approve', kwargs={'pk': loan.pk})
         response = api_client.post(url)
         
         assert response.status_code == status.HTTP_200_OK
@@ -50,13 +50,10 @@ class TestLoanApplication:
         assert loan.status == LoanStatus.APPROVED
 
     def test_regular_user_cannot_approve_loan(self, api_client, regular_user):
-        loan = LoanApplicationFactory()
+        loan = LoanApplicationFactory(user=regular_user)
         api_client.force_authenticate(user=regular_user)
-        
-        url = reverse('loans:loan-applications-approve', kwargs={'id': loan.id})
+        url = reverse('loans:loan-applications-approve', kwargs={'pk': loan.pk})
         response = api_client.post(url)
-
-        # breakpoint()
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -71,7 +68,7 @@ class TestLoanApplication:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data['results']) == 1
         assert response.data['results'][0]['id'] == str(flagged_loan.id)
-
+    
     def test_fraud_detection_on_loan_creation(self, api_client, regular_user):
         api_client.force_authenticate(user=regular_user)
         url = reverse('loans:loan-applications-list')

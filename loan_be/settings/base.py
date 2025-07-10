@@ -183,7 +183,7 @@ REST_FRAMEWORK = {
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://redis:6379/0",
+        "LOCATION": "redis://localhost:6379/0",
         "KEY_PREFIX": "loan_be", 
     }
 }

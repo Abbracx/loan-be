@@ -30,3 +30,26 @@ class TestUserManagement:
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         assert response.data['email'] == regular_user.email
+
+    def test_admin_user_access(self, api_client, admin_user):
+        api_client.force_authenticate(user=admin_user)
+        url = reverse('usersapi:users-list')
+        response = api_client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.data.get("results", None), list)
+        assert len(response.data) > 0
+    
+    # def test_user_profile_update(self, api_client, regular_user):
+    #     api_client.force_authenticate(user=regular_user)
+    #     url = reverse('usersapi:users-me')
+    #     data = {
+    #         'first_name': 'Updated',
+    #         'last_name': 'User',
+    #         'phone_number': '+1234567890'
+    #     }
+    #     response = api_client.patch(url, data)
+    #     assert response.status_code == status.HTTP_200_OK
+    #     assert response.data['first_name'] == 'Updated'
+    #     assert response.data['last_name'] == 'User'
+    #     assert response.data['phone_number'] == '+1234567890'
+
